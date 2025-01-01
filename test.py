@@ -7,6 +7,8 @@ import librosa
 import numpy as np
 import soundfile as sf
 from scipy.signal import butter, lfilter
+from langchain_ollama import OllamaLLM
+from langchain_core.prompts import ChatPromptTemplate  # Added this import
 
 def spectral_subtraction(audio, sr, noise_start=0, noise_end=1):
     noise_profile = audio[int(noise_start * sr):int(noise_end * sr)]
@@ -29,41 +31,56 @@ def trim_silence(audio, top_db=30):
     trimmed_audio, _ = librosa.effects.trim(audio, top_db=top_db)
     return trimmed_audio
 
-output_directory = "Questions"
-current_time = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-question_folder = os.path.join(output_directory, current_time)
-os.makedirs(question_folder, exist_ok=True)
+def main():
+    model = OllamaLLM(model="llama3.1")
+    
+    template = """
+    Answer the questions to the best of your ability and be concise.
+    Here is the conversation history: {context}
+    Question: {question}
+    Answer:
+    """
+    
+    output_directory = "Questions"
+    current_time = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    question_folder = os.path.join(output_directory, current_time)
+    os.makedirs(question_folder, exist_ok=True)
+    temp_folder = os.path.join(question_folder, "temp")
+    os.makedirs(temp_folder, exist_ok=True)
 
-temp_folder = os.path.join(question_folder, "temp")
-os.makedirs(temp_folder, exist_ok=True)
+    demucs.separate.main(["--mp3", "--two-stems", "vocals", "--device", "cpu", "--out", temp_folder, "sample_question.mp3"])
+    
+    vocals_src = os.path.join(temp_folder, "htdemucs", "sample_question", "vocals.mp3")
+    accompaniment_src = os.path.join(temp_folder, "htdemucs", "sample_question", "no_vocals.mp3")
+    vocals_dest = os.path.join(question_folder, "vocals.mp3")
+    accompaniment_dest = os.path.join(question_folder, "no_vocals.mp3")
+    shutil.move(vocals_src, vocals_dest)
+    shutil.move(accompaniment_src, accompaniment_dest)
+    shutil.rmtree(temp_folder)
 
-demucs.separate.main(["--mp3", "--two-stems", "vocals", "--device", "cpu", "--out", temp_folder, "sample_question.mp3"])
+    audio, sr = librosa.load(vocals_dest, sr=None)
+    cleaned_audio_ss = spectral_subtraction(audio, sr, noise_start=0, noise_end=1)
+    cleaned_audio_bp = bandpass_filter(cleaned_audio_ss, sr)
+    cleaned_audio_final = trim_silence(cleaned_audio_bp)
+    cleaned_audio_path = os.path.join(question_folder, "vocals_cleaned.wav")
+    sf.write(cleaned_audio_path, cleaned_audio_final, sr)
 
-vocals_src = os.path.join(temp_folder, "htdemucs", "sample_question", "vocals.mp3")
-accompaniment_src = os.path.join(temp_folder, "htdemucs", "sample_question", "no_vocals.mp3")
+    whisper_model = whisper.load_model("base")
+    result = whisper_model.transcribe(cleaned_audio_path)
+    
+    transcription_file = os.path.join(question_folder, "transcription.txt")
+    with open(transcription_file, "w") as file:
+        file.write(result['text'] +  "\n")
+    
+    print(f"Transcription: {result['text']}")
 
-vocals_dest = os.path.join(question_folder, "vocals.mp3")
-accompaniment_dest = os.path.join(question_folder, "no_vocals.mp3")
+    prompt = ChatPromptTemplate.from_template(template)
+    chain = prompt | model
+    llm_result = chain.invoke({"context": "", "question": result['text']})
+    print(llm_result)
 
-shutil.move(vocals_src, vocals_dest)
-shutil.move(accompaniment_src, accompaniment_dest)
+    with open(transcription_file, "a") as file:
+        file.write(llm_result)
 
-shutil.rmtree(temp_folder)
-
-audio, sr = librosa.load(vocals_dest, sr=None)
-cleaned_audio_ss = spectral_subtraction(audio, sr, noise_start=0, noise_end=1)
-cleaned_audio_bp = bandpass_filter(cleaned_audio_ss, sr)
-cleaned_audio_final = trim_silence(cleaned_audio_bp)
-
-cleaned_audio_path = os.path.join(question_folder, "vocals_cleaned.wav")
-sf.write(cleaned_audio_path, cleaned_audio_final, sr)
-
-model = whisper.load_model("base")
-result = model.transcribe(cleaned_audio_path)
-
-transcription_file = os.path.join(question_folder, "transcription.txt")
-with open(transcription_file, "w") as file:
-    file.write(result['text'])
-
-print(f"Transcription: {result['text']}")
-print(f"Files saved to folder: {question_folder}")
+if __name__ == "__main__":
+    main()
