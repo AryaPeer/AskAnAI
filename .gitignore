@@ -3,3 +3,4 @@
 prompt_env/
 .env
 *.rttm
+__pycache__/
