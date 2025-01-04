@@ -326,12 +326,12 @@ def process_audio_file(original_path: str) -> Tuple[str, str]:
     model = OllamaLLM(model="llama3.1")
     
     template = """
-    Answer the question to the best of your ability and be concise.
+    Answer the question to the best of your ability and be concise. Correct any grammar mistakes in the question.
     Question: {question}
     Answer:
     """ if num_speakers == 1 else """
     Given these speaker transcripts, identify the main question or discussion 
-    and provide a clear, concise answer.
+    and provide a clear, concise answer. Correct any grammar mistakes in the question.
 
     {question}
 
