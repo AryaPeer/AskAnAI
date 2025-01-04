@@ -1,0 +1,14 @@
+demucs==4.0.1
+librosa==0.10.2.post1
+numpy==1.26.3
+pydub==0.25.1
+PyQt6==6.8.0
+PyQt6_sip==13.9.1
+Resemblyzer==0.1.4
+scipy==1.14.1
+sounddevice==0.5.1
+soundfile==0.12.1
+spectralcluster==0.2.22
+langchain==0.3.13
+langchain-ollama==0.2.2
+openai-whisper @ git+https://github.com/openai/whisper.git@90db0de1896c23cbfaf0c58bc2d30665f709f170

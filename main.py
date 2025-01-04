@@ -8,6 +8,7 @@ import threading
 from PyQt6.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout, 
                             QPushButton, QLabel, QStackedWidget, QProgressBar)
 from PyQt6.QtCore import Qt, pyqtSignal, QObject
+from PyQt6.QtGui import QPalette
 import sounddevice as sd
 import numpy as np
 import soundfile as sf
@@ -240,8 +241,16 @@ class MainWindow(QMainWindow):
                 self.record_screen.toggle_recording()
 
 def main() -> None:
-    """Starts up the application"""
     app = QApplication(sys.argv)
+    
+    app.setStyle("Fusion")
+    palette = QPalette()
+    palette.setColor(QPalette.ColorRole.Window, Qt.GlobalColor.black)
+    palette.setColor(QPalette.ColorRole.WindowText, Qt.GlobalColor.white)
+    app.setPalette(palette)
+    
+    app.setApplicationName("Audio Q&A")
+    
     window = MainWindow()
     window.show()
     sys.exit(app.exec())
