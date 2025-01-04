@@ -1,6 +1,0 @@
-*.mp3
-*.wav
-prompt_env/
-.env
-*.rttm
-__pycache__/
