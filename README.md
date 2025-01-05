@@ -20,6 +20,11 @@ To get started, first build the Docker image. Open your terminal and navigate to
 docker build -t askanai .
 ```
 
+## Enable X11 access
+```sh
+xhost +local: 
+```
+
 ## Running the Docker Container
 Once the Docker image is built, you can run the container with the following command (it takes a while to load though):
 

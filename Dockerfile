@@ -29,12 +29,12 @@ WORKDIR /app
 
 COPY . /app
 
-COPY entrypoint.sh /app/entrypoint.sh
+COPY setup/entrypoint.sh /app/entrypoint.sh
 
 RUN chmod +x /app/entrypoint.sh
 
 RUN pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu
-RUN pip install -r requirements.txt
+RUN pip install -r setup/requirements.txt
 
 ENV DISPLAY=:0
 ENV QT_DEBUG_PLUGINS=0
